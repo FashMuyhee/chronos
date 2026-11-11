@@ -1,0 +1,65 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- Alarm-clock apps may hold USE_EXACT_ALARM without asking (Google Play alarm-app policy). -->
+  <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+  <queries>
+    <intent>
+      <action android:name="android.speech.RecognitionService" />
+    </intent>
+  </queries>
+
+  <application>
+    <activity
+      android:name="expo.modules.chronosalarms.ui.RingingActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleTask"
+      android:taskAffinity="expo.modules.chronosalarms.ringing"
+      android:showWhenLocked="true"
+      android:turnScreenOn="true"
+      android:directBootAware="true"
+      android:windowSoftInputMode="adjustResize"
+      android:theme="@style/ChronosRingingTheme" />
+
+    <service
+      android:name="expo.modules.chronosalarms.ringing.RingingService"
+      android:exported="false"
+      android:directBootAware="true"
+      android:foregroundServiceType="systemExempted" />
+
+    <receiver
+      android:name="expo.modules.chronosalarms.schedule.AlarmReceiver"
+      android:exported="false"
+      android:directBootAware="true" />
+
+    <receiver
+      android:name="expo.modules.chronosalarms.schedule.SnoozeActionReceiver"
+      android:exported="false"
+      android:directBootAware="true" />
+
+    <receiver
+      android:name="expo.modules.chronosalarms.schedule.RescheduleReceiver"
+      android:exported="true"
+      android:directBootAware="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

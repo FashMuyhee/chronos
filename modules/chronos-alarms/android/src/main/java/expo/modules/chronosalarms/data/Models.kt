@@ -1,4 +1,10 @@
-package expo.modules.chronosalarms
+package expo.modules.chronosalarms.data
+
+import expo.modules.chronosalarms.data.*
+import expo.modules.chronosalarms.schedule.*
+import expo.modules.chronosalarms.ringing.*
+import expo.modules.chronosalarms.ui.*
+import expo.modules.chronosalarms.R
 
 import org.json.JSONArray
 import org.json.JSONObject

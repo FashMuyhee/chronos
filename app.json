@@ -1,25 +1,56 @@
 {
   "expo": {
-    "name": "chronos",
+    "name": "Chronos",
     "slug": "chronos",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
+    "userInterfaceStyle": "automatic",
+    "platforms": [
+      "android"
+    ],
     "android": {
+      "package": "app.chronos.alarm",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1A1112",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/ChronosText.ttf",
+            "./assets/fonts/ChronosTextMedium.ttf",
+            "./assets/fonts/ChronosDisplay.ttf",
+            "./assets/fonts/ChronosDisplayMedium.ttf"
+          ]
+        }
+      ],
+      "./plugins/withAnimatedSplash",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF8F7",
+          "image": "./assets/splash-icon-light.png",
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#1A1112",
+            "image": "./assets/splash-icon.png"
+          }
+        }
+      ]
+    ],
+    "scheme": "chronos",
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }

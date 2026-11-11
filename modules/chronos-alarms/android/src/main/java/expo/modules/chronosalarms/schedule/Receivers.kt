@@ -1,4 +1,10 @@
-package expo.modules.chronosalarms
+package expo.modules.chronosalarms.schedule
+
+import expo.modules.chronosalarms.data.*
+import expo.modules.chronosalarms.schedule.*
+import expo.modules.chronosalarms.ringing.*
+import expo.modules.chronosalarms.ui.*
+import expo.modules.chronosalarms.R
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -85,5 +91,3 @@ object ChronosEvents {
     runCatching { listener?.invoke() }
   }
 }
-
-internal fun Context.color(id: Int) = ContextCompat.getColor(this, id)
