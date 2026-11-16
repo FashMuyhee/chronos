@@ -29,6 +29,8 @@ android {
 }
 
 dependencies {
+  // ReactFontManager, to share the module's font files with JS text.
+  implementation 'com.facebook.react:react-android'
   // Same Compose and Material 3 versions as @expo/ui, so both share one copy.
   implementation 'androidx.compose.foundation:foundation-android:1.12.1'
   implementation 'androidx.compose.ui:ui-android:1.12.1'

@@ -144,7 +144,7 @@ export default function Setup() {
       <Row verticalAlignment="top" horizontalArrangement={{ spacedBy: 12 }} modifiers={[fillMaxWidth(), padding(28, 16, 28, 0)]}>
         <Icon source={icons.info} size={20} tint={colors.onSurfaceVariant} />
         <Txt variant="bodyMedium" color={colors.onSurfaceVariant} modifiers={[weight(1)]}>
-          Chronos can't read alarms from your phone's Clock app. Turn those off once your Chronos alarms are set, so you don't get two.
+          Chronos can’t read alarms from your phone’s Clock app. Turn those off once your Chronos alarms are set, so you don’t get two.
         </Txt>
       </Row>
 
