@@ -46,14 +46,35 @@ type ScreenProps = {
  * `imePadding` on the scroll area shrinks it above the keyboard, so Compose brings the
  * focused text field into view on its own.
  */
-export function Screen({ title, large, navigation, actions, floating, bottomSpace = 32, children }: ScreenProps) {
-  const { dark, overrides, colors } = useTheme();
+export function Screen(props: ScreenProps) {
+  const { dark, overrides } = useTheme();
+  return (
+    <Host style={{ flex: 1 }} colorScheme={dark ? 'dark' : 'light'} colorOverrides={overrides} ignoreSafeAreaKeyboardInsets>
+      <ScreenBody {...props} />
+    </Host>
+  );
+}
+
+/**
+ * The screen without its own `<Host>`, for pages that share one, such as the home pager.
+ * `scroll={false}` hands the area under the header to the children as a fixed column.
+ */
+export function ScreenBody({
+  title,
+  large,
+  navigation,
+  actions,
+  floating,
+  bottomSpace = 32,
+  scroll = true,
+  children,
+}: ScreenProps & { scroll?: boolean }) {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [scrolled, setScrolled] = useState(false);
   const expanded = large && !scrolled;
 
   return (
-    <Host style={{ flex: 1 }} colorScheme={dark ? 'dark' : 'light'} colorOverrides={overrides} ignoreSafeAreaKeyboardInsets>
       <Box modifiers={[fillMaxSize(), background(colors.surface)]}>
         <Column modifiers={[fillMaxSize()]}>
           <Row
@@ -82,7 +103,13 @@ export function Screen({ title, large, navigation, actions, floating, bottomSpac
             {actions ? <Row verticalAlignment="center">{actions}</Row> : null}
           </Row>
 
-          <Column modifiers={[fillMaxWidth(), weight(1), imePadding(), verticalScroll(), scrollDismissesKeyboard()]}>
+          <Column
+            modifiers={[
+              fillMaxWidth(),
+              weight(1),
+              imePadding(),
+              ...(scroll ? [verticalScroll(), scrollDismissesKeyboard()] : []),
+            ]}>
             <Spacer
               modifiers={[
                 fillMaxWidth(),
@@ -97,6 +124,5 @@ export function Screen({ title, large, navigation, actions, floating, bottomSpac
 
         {floating ? <Box modifiers={[align('bottomEnd'), padding(0, 0, 16, insets.bottom + 16)]}>{floating}</Box> : null}
       </Box>
-    </Host>
   );
 }

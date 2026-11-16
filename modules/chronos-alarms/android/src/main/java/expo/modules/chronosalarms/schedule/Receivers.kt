@@ -5,6 +5,7 @@ import expo.modules.chronosalarms.schedule.*
 import expo.modules.chronosalarms.ringing.*
 import expo.modules.chronosalarms.ui.*
 import expo.modules.chronosalarms.R
+import expo.modules.chronosalarms.clock.ClockEngine
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -60,6 +61,7 @@ class RescheduleReceiver : BroadcastReceiver() {
       "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" -> {
         // Only re-schedule here: Android 15 forbids starting most foreground services from BOOT_COMPLETED.
         AlarmScheduler.rescheduleAll(context)
+        ClockEngine.restore(context)
         ChronosEvents.emitAlarmsChanged()
       }
     }

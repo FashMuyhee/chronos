@@ -3,6 +3,7 @@
  * components/ render, hooks/ hold state, lib/ is pure logic with no React.
  */
 export { AlarmRow } from './components/AlarmRow';
+export { AlarmsPage } from './components/AlarmsPage';
 export { DayPicker } from './components/DayPicker';
 export { EmptyState } from './components/EmptyState';
 export { NextAlarmCard } from './components/NextAlarmCard';

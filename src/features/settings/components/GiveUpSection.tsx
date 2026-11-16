@@ -9,7 +9,7 @@ export function GiveUpSection() {
   const { settings: s, saveSettings: save } = useAlarms();
   return (
     <>
-      <SectionTitle>If I can't do it</SectionTitle>
+      <SectionTitle>If I can’t do it</SectionTitle>
       <RowItem
         position="first"
         icon={icons.timer}

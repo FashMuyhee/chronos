@@ -12,6 +12,8 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <!-- Android 16 Live Updates for the running timer and stopwatch. -->
+  <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
   <queries>
     <intent>
@@ -61,5 +63,27 @@
         <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
       </intent-filter>
     </receiver>
+
+    <activity
+      android:name="expo.modules.chronosalarms.ui.TimerRingingActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleTask"
+      android:taskAffinity="expo.modules.chronosalarms.timer"
+      android:showWhenLocked="true"
+      android:turnScreenOn="true"
+      android:directBootAware="true"
+      android:theme="@style/ChronosRingingTheme" />
+
+    <service
+      android:name="expo.modules.chronosalarms.clock.ClockService"
+      android:exported="false"
+      android:directBootAware="true"
+      android:foregroundServiceType="systemExempted" />
+
+    <receiver
+      android:name="expo.modules.chronosalarms.clock.ClockActionReceiver"
+      android:exported="false"
+      android:directBootAware="true" />
   </application>
 </manifest>

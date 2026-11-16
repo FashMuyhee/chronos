@@ -4,6 +4,7 @@ import expo.modules.chronosalarms.data.*
 import expo.modules.chronosalarms.schedule.*
 import expo.modules.chronosalarms.ringing.*
 import expo.modules.chronosalarms.ui.*
+import expo.modules.chronosalarms.clock.*
 import expo.modules.chronosalarms.R
 
 import android.Manifest
@@ -21,6 +22,7 @@ import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.views.ComposableScope
 
 class ChronosAlarmsModule : Module() {
   private val context: Context
@@ -31,19 +33,82 @@ class ChronosAlarmsModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ChronosAlarms")
 
-    Events("onAlarmsChanged")
+    Events("onAlarmsChanged", "onClockChanged")
 
     OnCreate {
+      ChronosEvents.listener = { sendEvent("onAlarmsChanged", emptyMap<String, Any>()) }
+      ClockEngine.listener = { kind -> sendEvent("onClockChanged", clockMap(kind)) }
       appContext.reactContext?.let { ctx ->
         Notifications.ensureChannels(ctx)
         AlarmScheduler.rescheduleAll(ctx)
+        // The app is in the foreground here, so the clock service may start if something runs.
+        ClockEngine.restore(ctx)
+        AppShortcuts.publish(ctx)
       }
-      ChronosEvents.listener = { sendEvent("onAlarmsChanged", emptyMap<String, Any>()) }
     }
 
     OnDestroy {
       ChronosEvents.listener = null
+      ClockEngine.listener = null
     }
+
+    // region Timer and stopwatch. State lives in ClockEngine; each call returns the new state.
+
+    Function("getClock") {
+      ClockEngine.load(context)
+      clockMap(null)
+    }
+
+    Function("startTimer") { durationMs: Double ->
+      ClockEngine.startTimer(context, durationMs.toLong())
+      ClockEngine.timer.value.toMap()
+    }
+
+    Function("pauseTimer") { ClockEngine.pauseTimer(context); ClockEngine.timer.value.toMap() }
+    Function("resumeTimer") { ClockEngine.resumeTimer(context); ClockEngine.timer.value.toMap() }
+    Function("addTimerMinute") { ClockEngine.addMinute(context); ClockEngine.timer.value.toMap() }
+    Function("resetTimer") { ClockEngine.resetTimer(context); ClockEngine.timer.value.toMap() }
+
+    Function("startStopwatch") { ClockEngine.startStopwatch(context); ClockEngine.stopwatch.value.toMap() }
+    Function("pauseStopwatch") { ClockEngine.pauseStopwatch(context); ClockEngine.stopwatch.value.toMap() }
+    Function("lapStopwatch") { ClockEngine.lapStopwatch(context); ClockEngine.stopwatch.value.toMap() }
+    Function("resetStopwatch") { ClockEngine.resetStopwatch(context); ClockEngine.stopwatch.value.toMap() }
+
+    /** The stopwatch face, drawn natively so it can sweep every frame. Use inside an expo-ui Host. */
+    View<StopwatchDialProps>("StopwatchDialView") {
+      Content { props -> StopwatchDial(props) }
+    }
+
+    View<LapListProps>("LapListView") {
+      Content { props -> LapList(props) }
+    }
+
+    View<TimerFaceProps>("TimerFaceView") {
+      Content { props -> TimerFace(props) }
+    }
+
+    View<MorphButtonProps>("MorphButtonView") {
+      val onPress by Event<Unit>()
+      Content { props -> MorphButton(props) { onPress(Unit) } }
+    }
+
+    /** Home: its children are pages, swiped under a frosted-glass tab bar. */
+    View<GlassTabScaffoldProps>("GlassTabScaffoldView") {
+      val onTabSelect by Event<IndexEvent>()
+      val onPageChange by Event<IndexEvent>()
+      val onAction by Event<Unit>()
+      Content { props ->
+        GlassTabScaffold(
+          props,
+          pageCount = view.childCount,
+          onTabSelect = { onTabSelect(IndexEvent(it)) },
+          onPageChange = { onPageChange(IndexEvent(it)) },
+          onAction = { onAction(Unit) }
+        ) { index -> Child(ComposableScope(), index) }
+      }
+    }
+
+    // endregion
 
     Function("getAlarms") {
       AlarmStore.get(context).alarms().map { it.toMap(if (it.enabled) AlarmScheduler.nextTrigger(it) else null) }
@@ -234,6 +299,12 @@ class ChronosAlarmsModule : Module() {
       promise.resolve(result[permission]?.status?.name == "GRANTED")
     }, permission)
   }
+
+  private fun clockMap(changed: String?): Map<String, Any?> = mapOf(
+    "changed" to changed,
+    "timer" to ClockEngine.timer.value.toMap(),
+    "stopwatch" to ClockEngine.stopwatch.value.toMap()
+  )
 
   private fun packageUri(): Uri = Uri.parse("package:${context.packageName}")
 

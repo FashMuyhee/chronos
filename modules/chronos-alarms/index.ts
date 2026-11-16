@@ -82,8 +82,40 @@ export type PickedSound =
   | { cancelled: true }
   | { cancelled: false; uri: string | null; title: string | null };
 
+export type TimerStatus = 'idle' | 'running' | 'paused' | 'ringing';
+
+/**
+ * The countdown timer, owned by native code. Times are epoch milliseconds (Date.now()'s clock).
+ * Running or ringing: `endAt` is when it hits zero. Paused: `remainingMs` is frozen.
+ * `totalMs` includes any "+1 min"; `lastMs` is the last length started.
+ */
+export type TimerState = {
+  status: TimerStatus;
+  totalMs: number;
+  endAt: number;
+  remainingMs: number;
+  lastMs: number;
+};
+
+export type StopwatchStatus = 'idle' | 'running' | 'paused';
+
+/** Elapsed = accumulatedMs + (now - startedAt) while running. `laps` are totals at each lap. */
+export type StopwatchState = {
+  status: StopwatchStatus;
+  startedAt: number;
+  accumulatedMs: number;
+  laps: number[];
+};
+
+export type ClockState = {
+  changed: 'timer' | 'stopwatch' | null;
+  timer: TimerState;
+  stopwatch: StopwatchState;
+};
+
 type ChronosAlarmsEvents = {
   onAlarmsChanged: () => void;
+  onClockChanged: (state: ClockState) => void;
 };
 
 declare class ChronosAlarmsModule extends NativeModule<ChronosAlarmsEvents> {
@@ -106,6 +138,31 @@ declare class ChronosAlarmsModule extends NativeModule<ChronosAlarmsEvents> {
   requestBatteryUnrestricted(): void;
   getDefaultSoundTitle(): string;
   pickSound(currentUri: string | null): Promise<PickedSound>;
+
+  getClock(): ClockState;
+  startTimer(durationMs: number): TimerState;
+  pauseTimer(): TimerState;
+  resumeTimer(): TimerState;
+  addTimerMinute(): TimerState;
+  /** Cancels a running timer or stops a ringing one. */
+  resetTimer(): TimerState;
+  startStopwatch(): StopwatchState;
+  pauseStopwatch(): StopwatchState;
+  lapStopwatch(): StopwatchState;
+  resetStopwatch(): StopwatchState;
 }
+
+export { StopwatchDial, type StopwatchDialProps } from './StopwatchDial';
+export {
+  GlassTabScaffold,
+  LapList,
+  MorphButton,
+  TimerFace,
+  type GlassTabScaffoldProps,
+  type IconName,
+  type LapListProps,
+  type MorphButtonProps,
+  type TimerFaceProps,
+} from './ExpressiveViews';
 
 export default requireNativeModule<ChronosAlarmsModule>('ChronosAlarms');

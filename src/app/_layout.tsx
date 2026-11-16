@@ -9,6 +9,9 @@ import { ChronosContext, useChronosState } from '../features/alarms';
 import { buildTheme } from '../theme/buildTheme';
 import { ThemeContext } from '../ui';
 
+/** Links straight to an inner screen (the "New alarm" shortcut) still get Home underneath. */
+export const unstable_settings = { anchor: 'index' };
+
 /**
  * Root of the app: one native-state source (ChronosContext), the theme built from the
  * user's palette and light/dark choice, and a header-less stack (each screen draws its own).

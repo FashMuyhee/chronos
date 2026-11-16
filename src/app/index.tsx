@@ -1,81 +1,82 @@
-import { ExtendedFloatingActionButton, Icon, IconButton } from '@expo/ui/jetpack-compose';
-import { Redirect, router } from 'expo-router';
+import { Host, Icon, IconButton } from '@expo/ui/jetpack-compose';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import ChronosAlarms, { type Alarm } from '../../modules/chronos-alarms';
-import { AlarmRow, EmptyState, NextAlarmCard, useAlarms, useNow } from '../features/alarms';
-import { icons, Screen, SectionTitle, Txt, useTheme } from '../ui';
+import { GlassTabScaffold, type IconName } from '../../modules/chronos-alarms';
+import { AlarmsPage, useAlarms } from '../features/alarms';
+import { StopwatchPage, TimerPage, useClock } from '../features/clock';
+import { icons, ScreenBody, useTheme } from '../ui';
 
-const byTime = (a: Alarm, b: Alarm) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute);
-const byNext = (a: Alarm, b: Alarm) => (a.nextTriggerAt ?? Infinity) - (b.nextTriggerAt ?? Infinity) || byTime(a, b);
+const TABS: { key: string; label: string; icon: IconName }[] = [
+  { key: 'alarms', label: 'Alarms', icon: 'alarm' },
+  { key: 'timer', label: 'Timer', icon: 'hourglass' },
+  { key: 'stopwatch', label: 'Stopwatch', icon: 'stopwatch' },
+];
 
-/** Home: next-alarm card, then repeating and one-time alarms, or the first-run empty state. */
-export default function AlarmList() {
+const pageOf = (tab: string | undefined) => Math.max(0, TABS.findIndex((t) => t.key === tab));
+
+/** Room under each page's last item so it clears the floating glass bar. */
+const BAR_SPACE = 112;
+
+/**
+ * Home: Alarms, Timer and Stopwatch as swipeable pages in one Compose host, under Chronos's
+ * frosted-glass tab bar. `?tab=timer` (from a shortcut or notification deep link) picks a page.
+ */
+export default function Home() {
   const data = useAlarms();
-  const { colors } = useTheme();
-  const now = useNow();
+  const clock = useClock();
+  const { colors, dark, overrides } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { tab, t } = useLocalSearchParams<{ tab?: string; t?: string }>();
+  const [page, setPage] = useState(() => pageOf(tab));
+
+  // A deep link while the app is open (each carries a fresh `t`): show its page. This syncs to
+  // an external event, the link, which is what an effect is for; the native pager glides there.
+  useEffect(() => {
+    if (!tab) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(pageOf(tab));
+  }, [tab, t]);
 
   if (!data.settings.setupDone) return <Redirect href="/setup" />;
 
-  const repeating = data.alarms.filter((a) => a.kind === 'repeat').sort(byTime);
-  const oneTime = data.alarms.filter((a) => a.kind !== 'repeat').sort(byNext);
-  const nextAlarm = data.next ? data.alarms.find((a) => a.id === data.next?.alarmId) : undefined;
-  const open = (alarm: Alarm) => router.push({ pathname: '/alarm/[id]', params: { id: alarm.id } });
-  const toggle = (alarm: Alarm, enabled: boolean) => {
-    ChronosAlarms.setAlarmEnabled(alarm.id, enabled);
-    data.refresh();
-  };
-  const remove = (alarm: Alarm) => {
-    ChronosAlarms.deleteAlarm(alarm.id);
-    data.refresh();
-  };
-
-  const group = (title: string, alarms: Alarm[]) =>
-    alarms.length > 0 ? (
-      <>
-        <SectionTitle>{title}</SectionTitle>
-        {alarms.map((alarm, i) => (
-          <AlarmRow
-            key={alarm.id}
-            alarm={alarm}
-            challenge={alarm.challenge ?? data.settings.challenge}
-            index={i}
-            count={alarms.length}
-            onPress={open}
-            onToggle={toggle}
-            onDelete={remove}
-          />
-        ))}
-      </>
-    ) : null;
-
   return (
-    <Screen
-      title="Alarms"
-      large
-      bottomSpace={112}
-      actions={
-        <IconButton onClick={() => router.push('/settings')}>
-          <Icon source={icons.settings} contentDescription="Settings" tint={colors.onSurfaceVariant} />
-        </IconButton>
-      }
-      floating={
-        <ExtendedFloatingActionButton
-          onClick={() => router.push({ pathname: '/alarm/[id]', params: { id: 'new' } })}
-          containerColor={colors.primaryContainer}>
-          <ExtendedFloatingActionButton.Icon>
-            <Icon source={icons.add} tint={colors.onPrimaryContainer} />
-          </ExtendedFloatingActionButton.Icon>
-          <ExtendedFloatingActionButton.Text>
-            <Txt variant="labelLarge" color={colors.onPrimaryContainer} style={{ fontSize: 16 }}>
-              New alarm
-            </Txt>
-          </ExtendedFloatingActionButton.Text>
-        </ExtendedFloatingActionButton>
-      }>
-      {data.next && nextAlarm ? <NextAlarmCard next={data.next} alarm={nextAlarm} now={now} onChanged={data.refresh} /> : null}
-      {data.alarms.length === 0 ? <EmptyState now={now} onCreated={data.refresh} /> : null}
-      {group('Repeating', repeating)}
-      {group('One-time', oneTime)}
-    </Screen>
+    <Host style={{ flex: 1 }} colorScheme={dark ? 'dark' : 'light'} colorOverrides={overrides} ignoreSafeAreaKeyboardInsets>
+      <GlassTabScaffold
+        selected={page}
+        labels={TABS.map((t) => t.label)}
+        icons={TABS.map((t) => t.icon)}
+        actionPage={0}
+        actionIcon="add"
+        actionLabel="New alarm"
+        bottomInset={insets.bottom}
+        dark={dark}
+        accentColor={colors.primary}
+        onAccentColor={colors.onPrimary}
+        contentColor={colors.onSurfaceVariant}
+        glassColor={colors.surfaceContainerHigh}
+        onTabSelect={setPage}
+        onPageChange={setPage}
+        onAction={() => router.push({ pathname: '/alarm/[id]', params: { id: 'new' } })}>
+        <ScreenBody
+          title="Alarms"
+          large
+          bottomSpace={BAR_SPACE}
+          actions={
+            <IconButton onClick={() => router.push('/settings')}>
+              <Icon source={icons.settings} contentDescription="Settings" tint={colors.onSurfaceVariant} />
+            </IconButton>
+          }>
+          <AlarmsPage />
+        </ScreenBody>
+        <ScreenBody title="Timer" large bottomSpace={BAR_SPACE}>
+          <TimerPage timer={clock.timer} />
+        </ScreenBody>
+        <ScreenBody title="Stopwatch" large bottomSpace={BAR_SPACE}>
+          <StopwatchPage stopwatch={clock.stopwatch} />
+        </ScreenBody>
+      </GlassTabScaffold>
+    </Host>
   );
 }

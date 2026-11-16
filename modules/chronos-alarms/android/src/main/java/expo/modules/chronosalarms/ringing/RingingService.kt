@@ -13,18 +13,12 @@ import android.content.Context
 import android.content.IntentFilter
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.media.AudioAttributes
 import android.media.MediaPlayer
-import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.ServiceCompat
 import java.util.Calendar
@@ -276,64 +270,26 @@ class RingingService : Service() {
     stopSound()
     val session = RingingState.session.value ?: return
     val settings = AlarmStore.get(this).settings()
-    val uri = (session.alarm.soundUri ?: settings.defaultSoundUri)?.let(Uri::parse)
-      ?: RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM)
-      ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-      ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+    val uri = AlarmSound.resolve(this, session.alarm.soundUri ?: settings.defaultSoundUri)
 
     val ramp = settings.rampSeconds
     volume = if (ramp > 0) MIN_VOLUME else 1f
     targetVolume = 1f
     rampStep = if (ramp > 0) (1f - MIN_VOLUME) / (ramp * 1000f / RAMP_TICK_MS) else 1f
 
-    player = createPlayer(uri) ?: createPlayer(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
+    player = AlarmSound.player(this, uri)
     player?.setVolume(volume, volume)
     player?.start()
     handler.post(rampTick)
-    if (session.alarm.vibrate) startVibration()
-  }
-
-  private fun createPlayer(uri: Uri?): MediaPlayer? {
-    if (uri == null) return null
-    return try {
-      MediaPlayer().apply {
-        setAudioAttributes(
-          AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-        )
-        setDataSource(this@RingingService, uri)
-        isLooping = true
-        prepare()
-      }
-    } catch (e: Exception) {
-      Log.w(TAG, "could not play $uri", e)
-      null
-    }
+    if (session.alarm.vibrate) AlarmSound.vibrate(this)
   }
 
   private fun stopSound() {
     handler.removeCallbacks(rampTick)
-    player?.let { runCatching { it.stop() }; it.release() }
+    AlarmSound.release(player)
     player = null
-    vibrator()?.cancel()
+    AlarmSound.stopVibrating(this)
   }
-
-  private fun startVibration() {
-    val effect = VibrationEffect.createWaveform(longArrayOf(0, 900, 700), 0)
-    val attrs = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
-    @Suppress("DEPRECATION")
-    vibrator()?.vibrate(effect, attrs)
-  }
-
-  private fun vibrator(): Vibrator? =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
-    } else {
-      @Suppress("DEPRECATION")
-      getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-    }
 
   private fun acquireWakeLock() {
     if (wakeLock?.isHeld == true) return
