@@ -1,4 +1,4 @@
-import { AlertDialog, Icon, TextButton } from '@expo/ui/jetpack-compose';
+import { AlertDialog, Button, Icon, OutlinedButton } from '@expo/ui/jetpack-compose';
 
 import { useTheme } from './ThemeContext';
 import { Txt } from './Txt';
@@ -18,6 +18,9 @@ type ConfirmDialogProps = {
 /**
  * Material 3 confirmation dialog for actions that change or remove an alarm. Render it only
  * while it should be open; tapping outside, back, or Cancel all call `onDismiss`.
+ *
+ * Cancel is outlined and the action is filled, so the two read as clearly different choices;
+ * destructive actions fill with the error color.
  */
 export function ConfirmDialog({ icon, title, message, confirmLabel, destructive, onConfirm, onDismiss }: ConfirmDialogProps) {
   const { colors } = useTheme();
@@ -37,19 +40,19 @@ export function ConfirmDialog({ icon, title, message, confirmLabel, destructive,
         </Txt>
       </AlertDialog.Text>
       <AlertDialog.DismissButton>
-        <TextButton onClick={onDismiss}>
+        <OutlinedButton onClick={onDismiss}>
           <Txt variant="labelLarge">Cancel</Txt>
-        </TextButton>
+        </OutlinedButton>
       </AlertDialog.DismissButton>
       <AlertDialog.ConfirmButton>
-        <TextButton
+        <Button
           onClick={() => {
             onConfirm();
             onDismiss();
           }}
-          colors={destructive ? { contentColor: colors.error } : undefined}>
+          colors={destructive ? { containerColor: colors.error, contentColor: colors.onError } : undefined}>
           <Txt variant="labelLarge">{confirmLabel}</Txt>
-        </TextButton>
+        </Button>
       </AlertDialog.ConfirmButton>
     </AlertDialog>
   );

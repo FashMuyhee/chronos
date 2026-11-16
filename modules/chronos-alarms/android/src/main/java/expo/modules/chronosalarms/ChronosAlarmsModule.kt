@@ -18,6 +18,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings as AndroidSettings
 import androidx.core.app.NotificationManagerCompat
+import com.facebook.react.common.assets.ReactFontManager
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.modules.Module
@@ -39,6 +40,12 @@ class ChronosAlarmsModule : Module() {
       ChronosEvents.listener = { sendEvent("onAlarmsChanged", emptyMap<String, Any>()) }
       ClockEngine.listener = { kind -> sendEvent("onClockChanged", clockMap(kind)) }
       appContext.reactContext?.let { ctx ->
+        // The ringing screen's font files double as the JS fonts, so the APK carries one copy.
+        // Family names must match `fonts` in src/theme/tokens.ts.
+        val fontManager = ReactFontManager.getInstance()
+        fontManager.addCustomFont(ctx, "ChronosText", R.font.chronos_text)
+        fontManager.addCustomFont(ctx, "ChronosTextMedium", R.font.chronos_text_medium)
+        fontManager.addCustomFont(ctx, "ChronosDisplay", R.font.chronos_display)
         Notifications.ensureChannels(ctx)
         AlarmScheduler.rescheduleAll(ctx)
         // The app is in the foreground here, so the clock service may start if something runs.
