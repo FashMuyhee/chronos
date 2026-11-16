@@ -93,7 +93,8 @@ fun TimerFace(props: TimerFaceProps) {
   // Springs between the three looks: 0 = cookie, round 1 = circle, burst 1 = sun.
   val round by animateFloatAsState(if (timer.status == TimerStatus.PAUSED) 1f else 0f, spring(0.55f, 220f), label = "round")
   val burst by animateFloatAsState(if (ringing) 1f else 0f, spring(0.4f, 260f), label = "burst")
-  val shownFraction by animateFloatAsState(if (ringing) 1f else fraction, spring(0.8f, 300f), label = "ring")
+  // The ring is the true remaining fraction, frame by frame; it only fills when time is up.
+  val shownFraction = if (ringing) 1f else fraction
 
   val toCircle = remember { Morph(MaterialShapes.Cookie12Sided, MaterialShapes.Circle) }
   val toSun = remember { Morph(MaterialShapes.Cookie12Sided, MaterialShapes.VerySunny) }

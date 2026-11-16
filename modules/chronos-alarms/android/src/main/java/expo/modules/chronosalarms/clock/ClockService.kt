@@ -63,16 +63,23 @@ class ClockService : Service() {
 
     val nm = getSystemService(NotificationManager::class.java)
     val timerId = if (timer.status == TimerStatus.RINGING) ClockNotifications.ID_TIMER_RING else ClockNotifications.ID_TIMER
-    val timerNotification = if (timer.active) ClockNotifications.timer(this, timer) else null
-    val stopwatchNotification = if (stopwatch.active) ClockNotifications.stopwatch(this, stopwatch) else null
+    // A dismissed notification stays dismissed; a ring always shows. The service has to post
+    // something once when it first starts, though, so a fresh start shows it regardless.
+    val fresh = anchorId == 0
+    val showTimer = timer.active && (timer.status == TimerStatus.RINGING || !ClockEngine.timerDismissed || fresh)
+    val showStopwatch = stopwatch.active && (!ClockEngine.stopwatchDismissed || (fresh && !showTimer))
+    val timerNotification = if (showTimer) ClockNotifications.timer(this, timer) else null
+    val stopwatchNotification = if (showStopwatch) ClockNotifications.stopwatch(this, stopwatch) else null
 
     when {
       timerNotification != null -> {
         promote(timerId, timerNotification)
         if (stopwatchNotification != null) nm.notify(ClockNotifications.ID_STOPWATCH, stopwatchNotification)
-        else nm.cancel(ClockNotifications.ID_STOPWATCH)
+        else if (!stopwatch.active) nm.cancel(ClockNotifications.ID_STOPWATCH)
       }
       stopwatchNotification != null -> promote(ClockNotifications.ID_STOPWATCH, stopwatchNotification)
+      // Running, but the user dismissed what was showing: keep running quietly.
+      timer.active || stopwatch.active -> Unit
       else -> {
         // Started for a change that was undone before we ran: Android still requires one
         // startForeground call before the service may stop.
@@ -84,16 +91,16 @@ class ClockService : Service() {
       }
     }
     // Clear whichever timer notification no longer applies (running vs. time's up, or none).
-    if (timerNotification == null || timerId != ClockNotifications.ID_TIMER) nm.cancel(ClockNotifications.ID_TIMER)
-    if (timerNotification == null || timerId != ClockNotifications.ID_TIMER_RING) nm.cancel(ClockNotifications.ID_TIMER_RING)
+    if (!timer.active || timerId != ClockNotifications.ID_TIMER) nm.cancel(ClockNotifications.ID_TIMER)
+    if (!timer.active || timerId != ClockNotifications.ID_TIMER_RING) nm.cancel(ClockNotifications.ID_TIMER_RING)
 
     handler.removeCallbacks(progressTick)
-    if (ClockNotifications.liveUpdates && timer.status == TimerStatus.RUNNING) handler.postDelayed(progressTick, 1_000)
+    if (ClockNotifications.liveUpdates && showTimer && timer.status == TimerStatus.RUNNING) handler.postDelayed(progressTick, 1_000)
   }
 
   private fun notifyTimer() {
     val timer = ClockEngine.timer.value
-    if (!timer.active) return
+    if (!timer.active || ClockEngine.timerDismissed) return
     getSystemService(NotificationManager::class.java).notify(ClockNotifications.ID_TIMER, ClockNotifications.timer(this, timer))
   }
 

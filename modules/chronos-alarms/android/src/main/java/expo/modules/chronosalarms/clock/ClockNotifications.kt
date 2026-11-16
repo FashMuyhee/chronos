@@ -142,6 +142,9 @@ object ClockNotifications {
       .setAutoCancel(false)
       .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
       .setContentIntent(openTab(context, tab))
+      .setDeleteIntent(
+        action(context, if (tab == "timer") ClockActionReceiver.TIMER_DISMISSED else ClockActionReceiver.STOPWATCH_DISMISSED)
+      )
       .apply { if (liveUpdates) setRequestPromotedOngoing(true) }
 
   /** Opens the app on a tab through its Expo Router deep link (chronos://timer). */

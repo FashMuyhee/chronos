@@ -30,6 +30,17 @@ object ClockEngine {
   /** Called with "timer" or "stopwatch" after a change; the JS module forwards it as an event. */
   @Volatile var listener: ((String) -> Unit)? = null
 
+  /**
+   * The user swiped a running notification away. It stays gone (Live Update rules: don't repost
+   * a dismissed notification) until that clock starts over or the timer rings.
+   */
+  @Volatile var timerDismissed = false
+  @Volatile var stopwatchDismissed = false
+
+  fun notificationDismissed(kind: String) {
+    if (kind == "timer") timerDismissed = true else stopwatchDismissed = true
+  }
+
   /** Reads the saved state once per process. Safe to call from any entry point. */
   @Synchronized
   fun load(context: Context) {
@@ -106,6 +117,13 @@ object ClockEngine {
   }
 
   private fun setTimer(context: Context, state: TimerState) {
+    val before = _timer.value.status
+    // A new countdown, a ring or an end brings the notification back.
+    if (state.status == TimerStatus.RINGING || state.status == TimerStatus.IDLE ||
+      before == TimerStatus.IDLE || before == TimerStatus.RINGING
+    ) {
+      timerDismissed = false
+    }
     synchronized(this) {
       _timer.value = state
       ClockStore.get(context).saveTimer(state)
@@ -168,6 +186,7 @@ object ClockEngine {
     load(context)
     synchronized(this) {
       val next = transform(_stopwatch.value) ?: return
+      if (_stopwatch.value.status == StopwatchStatus.IDLE || next.status == StopwatchStatus.IDLE) stopwatchDismissed = false
       _stopwatch.value = next
       ClockStore.get(context).saveStopwatch(next)
     }

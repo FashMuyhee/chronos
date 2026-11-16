@@ -17,6 +17,8 @@ class ClockActionReceiver : BroadcastReceiver() {
       STOPWATCH_PAUSE -> ClockEngine.pauseStopwatch(context)
       STOPWATCH_LAP -> ClockEngine.lapStopwatch(context)
       STOPWATCH_RESET -> ClockEngine.resetStopwatch(context)
+      TIMER_DISMISSED -> ClockEngine.notificationDismissed("timer")
+      STOPWATCH_DISMISSED -> ClockEngine.notificationDismissed("stopwatch")
     }
   }
 
@@ -31,5 +33,7 @@ class ClockActionReceiver : BroadcastReceiver() {
     const val STOPWATCH_PAUSE = P + "STOPWATCH_PAUSE"
     const val STOPWATCH_LAP = P + "STOPWATCH_LAP"
     const val STOPWATCH_RESET = P + "STOPWATCH_RESET"
+    const val TIMER_DISMISSED = P + "TIMER_DISMISSED"
+    const val STOPWATCH_DISMISSED = P + "STOPWATCH_DISMISSED"
   }
 }

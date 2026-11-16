@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -174,14 +175,26 @@ fun GlassTabScaffold(
   val currentOnPageChange by rememberUpdatedState(onPageChange)
   val pager = rememberPagerState(initialPage = selected) { pageCount }
   val scope = rememberCoroutineScope()
-  // From JS (a deep link): glide there, unless the pager is already heading there.
-  LaunchedEffect(selected) {
-    if (pager.currentPage != selected && pager.targetPage != selected) {
+  // The pages are JS children that attach after the first composition, so the pager can start
+  // with fewer pages than `selected` needs and clamp to the last one. Until the target page
+  // exists and the pager has jumped there once, it neither moves on its own nor reports pages.
+  var synced by remember { mutableStateOf(false) }
+  LaunchedEffect(selected, pageCount) {
+    if (selected >= pageCount) return@LaunchedEffect
+    if (!synced) {
+      pager.scrollToPage(selected)
+      synced = true
+    } else if (pager.currentPage != selected && pager.targetPage != selected) {
+      // From JS (a deep link): glide there, unless the pager is already heading there.
       pager.animateScrollToPage(selected, animationSpec = PageSlide)
     }
   }
+  // Report the page under the finger while dragging, otherwise only where the pager comes to
+  // rest: pages passed during a programmatic glide must not echo back as new selections.
+  val dragged by pager.interactionSource.collectIsDraggedAsState()
   LaunchedEffect(pager) {
-    snapshotFlow { pager.currentPage }.collect { if (it != currentSelected) currentOnPageChange(it) }
+    snapshotFlow { if (dragged) pager.currentPage else pager.settledPage }
+      .collect { if (synced && it != currentSelected) currentOnPageChange(it) }
   }
   val position by remember { derivedStateOf { pager.currentPage + pager.currentPageOffsetFraction } }
   val select: (Int) -> Unit = { index ->
